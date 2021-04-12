@@ -1,0 +1,6 @@
+1. Clone repo to WSL2
+	- do not use cmake
+2. Download simulator on Windows:
+	- term3_sim_windows
+3. Download docker_files and move them to repo
+4. bash build.sh
