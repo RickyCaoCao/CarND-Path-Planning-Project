@@ -4,3 +4,5 @@
 	- term3_sim_windows
 3. Download docker_files and move them to repo
 4. bash build.sh
+
+For Docker Port: https://github.com/docker/compose/issues/4950

@@ -108,7 +108,8 @@ int main() {
           }
         
           bool too_close = false; // True if too close to a car in front
-        
+          bool has_changed_lane = false;
+
           // Find ref_v to use
           for (int i = 0; i < sensor_fusion.size(); i++) {
             // Check if the car is in the same lane as the ego vehicle
@@ -121,14 +122,63 @@ int main() {
               
               // Calculate the check_car's future location
               check_car_s += (double)prev_size * 0.02 * check_speed;
-              // If the check_car is within 30 meters in front, reduce ref_vel so that we don't hit it
-              if (check_car_s > car_s && (check_car_s - car_s) < 30){
+              // If the check_car is within 25 meters in front, reduce ref_vel so that we don't hit it
+              if (check_car_s > car_s && (check_car_s - car_s) < 25){
                 //ref_vel = 29.5;
                 too_close = true;
               } 
             }
           }
-        
+
+          if(too_close){
+            int prev_lane = lane;
+            vector<int> next_lanes;
+
+            switch(lane){
+              case 0:
+                next_lanes.push_back(1);
+                break;
+              case 1:
+                next_lanes.push_back(0);
+                next_lanes.push_back(2);
+                break;
+              case 2:
+                next_lanes.push_back(1);
+                break;
+            }
+
+            for (int n = 0; n < next_lanes.size(); n++) {
+              int next_lane = next_lanes[n];
+              bool can_change_lane = true;
+
+              for (int i = 0; i < sensor_fusion.size(); i++) {
+                // Check if the car is in the next lane as the ego vehicle
+                float d = sensor_fusion[i][6];
+                if (d < (2+4*next_lane+2) && d > (2+4*next_lane-2)){
+                  double vx = sensor_fusion[i][3];
+                  double vy = sensor_fusion[i][4];
+                  double check_speed = sqrt(vx*vx + vy*vy);
+                  double check_car_s = sensor_fusion[i][5];
+
+                  // Calculate the check_car's future location
+                  check_car_s += (double)prev_size * 0.02 * check_speed;
+                  // If the check_car is within 30 meters in front or 15 meters behind, then we do not pass
+                  if ( ((car_s > check_car_s) && (car_s - check_car_s) < 15) ||
+                    ((check_car_s > car_s) && (check_car_s - car_s) < 30)){
+                    can_change_lane = false;
+                    break;
+                  } 
+                }
+              }
+              if(can_change_lane){
+                lane = next_lane;
+                break;
+              }
+            }
+
+            has_changed_lane = (prev_lane == lane);
+          }
+
           // Create a list of evenly spaced waypoints 30m apart
           // Interpolate those waypoints later with spline and fill it in with more points
           vector<double> ptsx;
